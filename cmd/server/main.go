@@ -5,9 +5,6 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	fileshare "git"
-	"github.com/c2h5oh/datasize"
-	"goji.io/pat"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -16,10 +13,13 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/foolin/goview"
+	"github.com/greboid/fileshare"
 	"github.com/kouhin/envflag"
 	"github.com/yalue/merged_fs"
 	"goji.io"
+	"goji.io/pat"
 )
 
 //go:embed resources/static resources/views
@@ -100,7 +100,7 @@ func handleUpload(writer http.ResponseWriter, request *http.Request) {
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
 	err := goview.Render(writer, http.StatusOK, "index", goview.M{
-		"Title": "Index",
+		"Title":   "Index",
 		"Version": version,
 	})
 	if err != nil {

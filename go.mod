@@ -1,4 +1,4 @@
-module git
+module github.com/greboid/fileshare
 
 go 1.16
 
