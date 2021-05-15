@@ -1,0 +1,88 @@
+:root {
+    --divider: #6c757d;
+    --linkColour: #1E69CA;
+    --backgroundColour: #eee;
+    --foregroundColor: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --divider: #6c757d;
+        --linkColour: #6eb9ff;
+        --backgroundColour: #161616;
+        --foregroundColor: #d6d6d6;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+p {
+    margin: 0;
+}
+
+html {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    padding: 1.5em 2.5em 0.5em 2.5em;
+    background-color: var(--backgroundColour);
+    min-height: 100vh;
+    color: var(--foregroundColor);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+    display: grid;
+    grid-template-columns: auto 40vw auto;
+    grid-template-rows: auto 1fr auto;
+    grid-column-gap: 2.5em;
+    grid-template-areas:
+        ". header ."
+        ". main ."
+        "footer footer footer";
+}
+
+body > header.pageheader {
+    grid-area: header;
+    text-align: center;
+}
+
+body > footer {
+    grid-area: footer;
+    text-align: center;
+}
+
+main {
+    grid-area: main;
+    overflow: hidden;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+#uploader {
+    border: 2px dashed #ccc;
+    border-radius: 1em;
+    padding: 0.5em;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+}
+#uploader.highlight {
+    border-color: purple;
+}
+.button {
+    display: inline-block;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+#fileElem {
+    display: none;
+}
