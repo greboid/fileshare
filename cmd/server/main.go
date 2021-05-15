@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	fileshare "git"
 	"github.com/c2h5oh/datasize"
 	"goji.io/pat"
 	"io/fs"
@@ -43,8 +44,8 @@ func main() {
 	}
 	initTemplates()
 	router := goji.NewMux()
-	router.Use(LoggingHandler(os.Stdout))
-	router.Use(StripSlashes)
+	router.Use(fileshare.LoggingHandler(os.Stdout))
+	router.Use(fileshare.StripSlashes)
 	router.HandleFunc(pat.New("/"), handleIndex)
 	router.HandleFunc(pat.New("/uploadfile"), handleUpload)
 	router.Handle(pat.New("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
