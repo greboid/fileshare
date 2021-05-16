@@ -43,20 +43,15 @@ function uploadFile(file) {
         progressBar.value = event.loaded / event.total * 100
     }
     function progressDone(progressBar, response) {
-        console.log(response.data)
         let leftText = document.createTextNode("Uploaded: ");
         let rightText = document.createTextNode(" (" + response.data.HumanSize + ")");
         let link = document.createElement("a")
         link.href = response.data.URL
         link.innerHTML = response.data.FullName
         let para = document.createElement("p")
-        console.log(leftText)
-        console.log(link)
-        console.log(rightText)
         para.appendChild(leftText)
         para.appendChild(link)
         para.appendChild(rightText)
-        console.log(para)
         progressBar.replaceWith(para)
     }
     axios({
