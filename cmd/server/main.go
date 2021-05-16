@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/foolin/goview"
 	"github.com/greboid/fileshare"
 	"github.com/kouhin/envflag"
@@ -49,6 +49,7 @@ func main() {
 	router.HandleFunc(pat.New("/"), handleIndex)
 	router.HandleFunc(pat.New("/uploadfile"), handleUpload)
 	router.Handle(pat.New("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
+	router.Handle(pat.New("/raw/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
 
 	log.Print("Starting server.")
 	server := http.Server{
@@ -70,6 +71,9 @@ func main() {
 }
 
 func handleUpload(writer http.ResponseWriter, request *http.Request) {
+	ud := fileshare.UploadDescription{
+		Name: fileshare.Hex(6),
+	}
 	if err := request.ParseMultipartForm(1 << 30); err != nil {
 		log.Printf("Upload failed: couldn't parse multipart data: %v", err)
 		writer.WriteHeader(http.StatusBadRequest)
@@ -84,18 +88,26 @@ func handleUpload(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = file.Close()
 	}()
-	_, err = ioutil.ReadAll(file)
+	ud.Extension = filepath.Ext(handler.Filename)
+	ud.Size = handler.Size
+	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		log.Printf("Upload failed: couldn't read file: %v", err)
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	//err = os.WriteFile(filepath.Join(*workDir, "file.jpg"), data, 0644)
-	//if err != nil {
-	//	log.Printf("Upload failed: couldn't write file: %v", err)
-	//	writer.WriteHeader(http.StatusBadRequest)
-	//}
-	_, _ = writer.Write([]byte(fmt.Sprintf("%s (%s)", handler.Filename, datasize.ByteSize(handler.Size).HumanReadable())))
+	json, err := ud.GetJSON()
+	if err != nil {
+		log.Printf("Upload failed: couldn't get file data: %v", err)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err = os.WriteFile(filepath.Join(*workDir, "raw", ud.GetFullName()), data, 0644)
+	if err != nil {
+		log.Printf("Upload failed: couldn't write file: %v", err)
+		writer.WriteHeader(http.StatusBadRequest)
+	}
+	_, _ = writer.Write(json)
 }
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
@@ -135,7 +147,7 @@ func initFileSystem() error {
 	templateFs, _ := fs.Sub(embeddedFiles, "resources/views")
 	templateFiles = merged_fs.NewMergedFS(os.DirFS("resources/views"), templateFs)
 
-	err := os.MkdirAll(*workDir, 0644)
+	err := os.MkdirAll(filepath.Join(*workDir, "raw"), 0644)
 	if err != nil {
 		return err
 	}
