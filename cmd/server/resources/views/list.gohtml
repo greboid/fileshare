@@ -1,7 +1,24 @@
 {{define "content"}}
-    <ul>
-        {{ range .Files }}
-            <li><a href="{{.GetURL}}">{{.GetFullName}}</a> ({{.GetHumanSize}}) {{.GetHumanExpiry}} <a class="deleteLink" href="#" data-file="{{.GetFullName}}">Delete</a></li>
-        {{ end }}
-    </ul>
+    <p>Expiry times may be negative, these will be picked up in the next pruning run, or on access.</p>
+        <table>
+            <thead>
+            <tr>
+                <th>Link</th>
+                <th>Size</th>
+                <th>Expiry</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ if not .Files}}<tr><td colspan="4" class="spanned">No files</td></tr>{{ end }}
+            {{ range .Files }}
+            <tr>
+                <td><a href="{{.GetURL}}">{{.GetFullName}}</a></td>
+                <td>{{.GetHumanSize}}</td>
+                <td>{{.GetHumanExpiry}}</td>
+                <td><a class="deleteLink" href="#" data-file="{{.GetFullName}}">Delete</a></td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
 {{end}}

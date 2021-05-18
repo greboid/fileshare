@@ -97,3 +97,16 @@ input {
     grid-auto-flow: column;
     gap: 0.5em;
 }
+table {
+    border-collapse: collapse;
+}
+td,th {
+    border: 1px solid #ccc;
+    padding: 0.25em;
+}
+th {
+    text-align: left;
+}
+td.spanned {
+    text-align: center;
+}

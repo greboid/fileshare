@@ -53,7 +53,7 @@ function handleDelete(link) {
         method: 'delete',
         url: '/admin/delete/' + link.dataset.file,
     })
-        .then(() => link.parentNode.parentNode.removeChild(link.parentNode))
+        .then(() => link.parentNode.parentNode.parentNode.removeChild(link.parentNode.parentNode))
         .catch(() => {
             /* Error. Inform the user */
         })
