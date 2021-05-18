@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/goji/httpauth"
@@ -52,6 +53,7 @@ func main() {
 	defer func() {
 		_ = db.Close()
 	}()
+	backgroundPrune(db)
 	authOptions := httpauth.AuthOptions{
 		AuthFunc: authFunc(os.Getenv("API-KEY")),
 	}
@@ -88,14 +90,51 @@ func main() {
 	log.Print("Finishing server.")
 }
 
+func backgroundPrune(db *buntdb.DB) {
+	ticker := time.NewTicker(1 * time.Minute)
+	pruneFiles(db)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				pruneFiles(db)
+			}
+		}
+	}()
+}
+
+func pruneFiles(db *buntdb.DB) {
+	var uploads []fileshare.UploadDescription
+	_ = db.View(func(tx *buntdb.Tx) error {
+		err := tx.Ascend("", func(key, value string) bool {
+			ud := fileshare.UploadDescription{}
+			_ = json.Unmarshal([]byte(value), &ud)
+			uploads = append(uploads, ud)
+			return true
+		})
+		return err
+	})
+	for index := range uploads {
+		if time.Now().After(uploads[index].Expiry) {
+			log.Printf("Removing: %s", uploads[index].GetFullName())
+			err := os.Remove(filepath.Join(*workDir, "raw", uploads[index].GetFullName()))
+			if err != nil {
+				log.Printf("Error removing file %s: %s", uploads[index].GetFullName(), err.Error())
+			}
+			_ = db.Update(func(tx *buntdb.Tx) error {
+				_, err = tx.Delete(uploads[index].GetFullName())
+				return err
+			})
+		}
+	}
+}
+
 func authFunc(key string) func(string, string, *http.Request) bool {
 	if key == "" {
-		log.Printf("API Key: Unspecified")
 		return func(string, string, *http.Request) bool {
 			return true
 		}
 	}
-	log.Printf("API Key: Specified")
 	return func(_ string, password string, request *http.Request) bool {
 		key := request.Header.Get("X-API-KEY")
 		if key == "meh" || password == "meh" {
@@ -133,18 +172,19 @@ func handleUpload(db *buntdb.DB) func(writer http.ResponseWriter, request *http.
 		}
 		ud.Extension = filepath.Ext(handler.Filename)
 		ud.Size = handler.Size
-		json, err := ud.GetJSON()
-		if err != nil {
-			log.Printf("Upload failed: couldn't get file data: %v", err)
-			writer.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		jsonData, err := json.Marshal(ud)
 		err = db.Update(func(tx *buntdb.Tx) error {
-			_, _, err = tx.Set(ud.Name, string(json), nil)
+			_, _, err = tx.Set(ud.GetFullName(), string(jsonData), nil)
 			return err
 		})
 		if err != nil {
 			log.Printf("Upload failed: unable to write meta: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		jsonData, err = ud.GetJSON()
+		if err != nil {
+			log.Printf("Upload failed: couldn't get file data: %v", err)
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -159,7 +199,7 @@ func handleUpload(db *buntdb.DB) func(writer http.ResponseWriter, request *http.
 			log.Printf("Upload failed: couldn't write file: %v", err)
 			writer.WriteHeader(http.StatusBadRequest)
 		}
-		_, _ = writer.Write(json)
+		_, _ = writer.Write(jsonData)
 	}
 }
 

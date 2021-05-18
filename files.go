@@ -3,7 +3,6 @@ package fileshare
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -30,9 +29,6 @@ func (ud *UploadDescription) GetHumanSize() string {
 
 func (ud *UploadDescription) GetJSON() ([]byte, error) {
 	output := map[string]string{
-		"Name":      ud.Name,
-		"Extension": ud.Extension,
-		"Size":      strconv.FormatInt(ud.Size, 10),
 		"FullName":  ud.GetFullName(),
 		"URL":       ud.GetURL(),
 		"HumanSize": ud.GetHumanSize(),
