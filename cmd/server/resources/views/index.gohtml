@@ -2,13 +2,18 @@
     <form action="/upload/file" enctype="multipart/form-data" method="post" class="uploader" id="uploader">
         <label class="button" for="fileElem">Click or Drop file(s)</label>
         <input type="file" id="fileElem" multiple onchange="handleFiles(this.files)">
-        <select id="expiry">
-            <option value="1m">1 minute</option>
-            <option value="5m">5 minutes</option>
-            <option value="1h">1 hour</option>
-            <option value="24h">24 hours</option>
-            <option value="0" selected>Unlimited</option>
-        </select>
+        <div class="uploadOption">
+            <select id="expiry">
+                <option value="1m">1 minute</option>
+                <option value="5m">5 minutes</option>
+                <option value="1h">1 hour</option>
+                <option value="24h">24 hours</option>
+                <option value="0" selected>Unlimited</option>
+            </select>
+            <label for="randomize">Randomise filename
+                <input id="randomise" name="randimise" type="checkbox" value="randomise" disabled checked />
+            </label>
+        </div>
     </form>
     <div class="uploaded"></div>
 {{end}}

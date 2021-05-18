@@ -62,6 +62,7 @@ function handleDelete(link) {
 function uploadFile(file) {
     let mainElement = document.getElementsByClassName("uploaded")[0]
     let expiryElement = document.getElementById('expiry');
+    let randomiseElement = document.getElementById('randomise');
     let expiry = expiryElement.selectedOptions[0].value
     let progressBar = document.createElement("progress")
     progressBar.setAttribute("max", "100")
@@ -71,6 +72,7 @@ function uploadFile(file) {
     let formData = new FormData()
     formData.append('file', file)
     formData.append('expiry', expiry)
+    formData.append('randomise', randomiseElement.checked)
 
     function handleProgress(event, progressBar) {
         progressBar.value = event.loaded / event.total * 100
