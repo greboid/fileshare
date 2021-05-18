@@ -28,7 +28,7 @@ func authFunc(key string) func(string, string, *http.Request) bool {
 func Auth(apiKey string) func(handler http.Handler) http.Handler {
 	return httpauth.BasicAuth(httpauth.AuthOptions{
 		AuthFunc: authFunc(apiKey),
-		Realm: "fileshare",
+		Realm:    "fileshare",
 	})
 }
 

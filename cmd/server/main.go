@@ -34,6 +34,7 @@ var (
 	httpPort      = flag.Int("httpport", 8080, "HTTP server port")
 	workDir       = flag.String("workdir", "./data", "Working directory")
 	dbFile        = flag.String("db-file", "./data/meta.db", "Path to the meta database")
+	siteTitle     = flag.String("site-title", "Fileshare", "Name of the site")
 )
 
 func main() {
@@ -75,7 +76,7 @@ func main() {
 	router.Handle(pat.New("/admin/*"), admin)
 	router.Handle(pat.New("/upload/*"), upload)
 	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
-	router.Handle(pat.Get(rawDirectory + "/*"), files)
+	router.Handle(pat.Get(rawDirectory+"/*"), files)
 
 	log.Print("Starting server.")
 	server := http.Server{
@@ -166,11 +167,10 @@ func handleUpload(db *fileshare.DB) func(writer http.ResponseWriter, request *ht
 func handleList(db *fileshare.DB) func(writer http.ResponseWriter, request *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		{
-			err := goview.Render(writer, http.StatusOK, "list", goview.M{
+			err := goview.Render(writer, http.StatusOK, "list", getSettings(goview.M{
 				"Title": "List",
-				"Version": version,
 				"Files": db.GetFiles(),
-			})
+			}))
 			if err != nil {
 				_, _ = fmt.Fprintf(writer, "Render index error: %v!", err)
 			}
@@ -179,13 +179,22 @@ func handleList(db *fileshare.DB) func(writer http.ResponseWriter, request *http
 }
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
-	err := goview.Render(writer, http.StatusOK, "index", goview.M{
-		"Title":   "Index",
-		"Version": version,
-	})
+	err := goview.Render(writer, http.StatusOK, "index", getSettings(goview.M{
+		"Title": "Index",
+	}))
 	if err != nil {
 		_, _ = fmt.Fprintf(writer, "Render index error: %v!", err)
 	}
+}
+
+func getSettings(additional goview.M) goview.M {
+	combined := goview.M{}
+	for key, value := range additional {
+		combined[key] = value
+	}
+	combined["SiteTitle"] = siteTitle
+	combined["Version"] = version
+	return combined
 }
 
 func initTemplates() {
