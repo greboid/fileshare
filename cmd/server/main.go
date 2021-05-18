@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/goji/httpauth"
+	"github.com/tidwall/buntdb"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -32,6 +33,7 @@ var (
 	version       = "snapshot"
 	httpPort      = flag.Int("httpport", 8080, "HTTP server port")
 	workDir       = flag.String("workdir", "./data", "Working directory")
+	dbFile        = flag.String("db-file", "data/meta.db", "Path to the meta database")
 )
 
 func main() {
@@ -43,6 +45,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to create work directory: %s", err.Error())
 	}
+	db, err := buntdb.Open(*dbFile)
+	if err != nil {
+		log.Fatalf("Unable to open the database: %s", err.Error())
+	}
+	defer func() {
+		_ = db.Close()
+	}()
 	authOptions := httpauth.AuthOptions{
 		AuthFunc: authFunc(os.Getenv("API-KEY")),
 	}
@@ -51,7 +60,7 @@ func main() {
 	upload := goji.SubMux()
 
 	upload.Use(httpauth.BasicAuth(authOptions))
-	upload.HandleFunc(pat.New("/file"), handleUpload)
+	upload.HandleFunc(pat.New("/file"), handleUpload(db))
 
 	router.Use(fileshare.LoggingHandler(os.Stdout))
 	router.Use(fileshare.StripSlashes)
@@ -96,51 +105,62 @@ func authFunc(key string) func(string, string, *http.Request) bool {
 	}
 }
 
-func handleUpload(writer http.ResponseWriter, request *http.Request) {
-	ud := fileshare.UploadDescription{
-		Name: fileshare.Hex(6),
-	}
-	if err := request.ParseMultipartForm(1 << 30); err != nil {
-		log.Printf("Upload failed: couldn't parse multipart data: %v", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	file, handler, err := request.FormFile("file")
-	if err != nil {
-		log.Printf("Upload failed: couldn't find file: %v", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-	expiry := request.FormValue("expiry")
-	if expiry != "0" {
-		duration, err := time.ParseDuration(expiry)
-		if err == nil {
-			ud.Expiry = time.Now().Add(duration)
+func handleUpload(db *buntdb.DB) func(writer http.ResponseWriter, request *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		ud := fileshare.UploadDescription{
+			Name: fileshare.Hex(6),
 		}
+		if err := request.ParseMultipartForm(1 << 30); err != nil {
+			log.Printf("Upload failed: couldn't parse multipart data: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		file, handler, err := request.FormFile("file")
+		if err != nil {
+			log.Printf("Upload failed: couldn't find file: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		defer func() {
+			_ = file.Close()
+		}()
+		expiry := request.FormValue("expiry")
+		if expiry != "0" {
+			duration, err := time.ParseDuration(expiry)
+			if err == nil {
+				ud.Expiry = time.Now().Add(duration)
+			}
+		}
+		ud.Extension = filepath.Ext(handler.Filename)
+		ud.Size = handler.Size
+		json, err := ud.GetJSON()
+		if err != nil {
+			log.Printf("Upload failed: couldn't get file data: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = db.Update(func(tx *buntdb.Tx) error {
+			_, _, err = tx.Set(ud.Name, string(json), nil)
+			return err
+		})
+		if err != nil {
+			log.Printf("Upload failed: unable to write meta: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		data, err := ioutil.ReadAll(file)
+		if err != nil {
+			log.Printf("Upload failed: couldn't read file: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = os.WriteFile(filepath.Join(*workDir, "raw", ud.GetFullName()), data, 0644)
+		if err != nil {
+			log.Printf("Upload failed: couldn't write file: %v", err)
+			writer.WriteHeader(http.StatusBadRequest)
+		}
+		_, _ = writer.Write(json)
 	}
-	ud.Extension = filepath.Ext(handler.Filename)
-	ud.Size = handler.Size
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Printf("Upload failed: couldn't read file: %v", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	json, err := ud.GetJSON()
-	if err != nil {
-		log.Printf("Upload failed: couldn't get file data: %v", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = os.WriteFile(filepath.Join(*workDir, "raw", ud.GetFullName()), data, 0644)
-	if err != nil {
-		log.Printf("Upload failed: couldn't write file: %v", err)
-		writer.WriteHeader(http.StatusBadRequest)
-	}
-	_, _ = writer.Write(json)
 }
 
 func handleIndex(writer http.ResponseWriter, _ *http.Request) {
