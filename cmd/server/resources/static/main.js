@@ -27,11 +27,11 @@ function preventDefaults(e) {
 }
 
 function highlight() {
-    dropArea.classList.add('highlight')
+    dropArea.firstElementChild.classList.add('highlight');
 }
 
 function unhighlight() {
-    dropArea.classList.remove('highlight')
+    dropArea.firstElementChild.classList.remove('highlight');
 }
 
 function handleDrop(e) {
@@ -60,7 +60,7 @@ function handleDelete(link) {
 }
 
 function uploadFile(file) {
-    let mainElement = document.getElementsByClassName("content")[0]
+    let mainElement = document.getElementsByClassName("uploaded")[0]
     let expiryElement = document.getElementById('expiry');
     let expiry = expiryElement.selectedOptions[0].value
     let progressBar = document.createElement("progress")

@@ -1,8 +1,7 @@
 {{define "content"}}
     <form action="/upload/file" enctype="multipart/form-data" method="post" class="uploader" id="uploader">
-        <p>Upload files</p>
+        <label class="button" for="fileElem">Click or Drop file(s)</label>
         <input type="file" id="fileElem" multiple onchange="handleFiles(this.files)">
-        <label class="button" for="fileElem">Browse</label>
         <select id="expiry">
             <option value="1m">1 minute</option>
             <option value="5m">5 minutes</option>

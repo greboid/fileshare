@@ -23,7 +23,7 @@ p {
 }
 
 html {
-    min-height: 100vh;
+
     margin: 0;
     padding: 0;
 }
@@ -32,7 +32,6 @@ body {
     margin: 0;
     padding: 1.5em 2.5em 0.5em 2.5em;
     background-color: var(--backgroundColour);
-    min-height: 100vh;
     color: var(--foregroundColor);
     font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
@@ -41,17 +40,19 @@ body {
     grid-template-rows: auto 1fr auto;
     grid-column-gap: 2.5em;
     grid-template-areas:
-        ". header ."
+        "header header header"
         ". main ."
         "footer footer footer";
+    gap: 1em;
 }
 
-body > header.pageheader {
+header {
     grid-area: header;
     text-align: center;
+    margin: 1em;
 }
 
-body > footer {
+footer {
     grid-area: footer;
     text-align: center;
 }
@@ -63,25 +64,25 @@ main {
     display: flex;
     flex-direction: column;
 }
-
+.container {
+    gap: 1em;
+}
 #uploader {
-    border: 2px dashed #ccc;
-    border-radius: 1em;
-    padding: 0.5em;
     justify-content: center;
     display: flex;
     flex-direction: column;
+    gap: 1em;
 }
-#uploader.highlight {
+.button.highlight {
     border-color: purple;
 }
 .button {
+    border: 2px dashed #ccc;
     display: inline-block;
-    padding: 10px;
     cursor: pointer;
     border-radius: 5px;
-    border: 1px solid #ccc;
     text-align: center;
+    padding: 1em;
 }
 #fileElem {
     display: none;
