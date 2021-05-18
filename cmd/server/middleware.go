@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/greboid/fileshare"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/handlers"
+	"github.com/greboid/fileshare"
 )
 
 func authFunc(key string) func(string, string, *http.Request) bool {
