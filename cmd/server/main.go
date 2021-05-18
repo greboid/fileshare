@@ -35,7 +35,7 @@ var (
 	version       = "snapshot"
 	httpPort      = flag.Int("httpport", 8080, "HTTP server port")
 	workDir       = flag.String("workdir", "./data", "Working directory")
-	dbFile        = flag.String("db-file", "data/meta.db", "Path to the meta database")
+	dbFile        = flag.String("db-file", "./data/meta.db", "Path to the meta database")
 )
 
 func main() {
