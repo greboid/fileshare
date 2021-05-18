@@ -86,6 +86,7 @@ input {
     border-radius: 5px;
     text-align: center;
     padding: 1em;
+    min-height: 6em;
 }
 #fileElem {
     display: none;
