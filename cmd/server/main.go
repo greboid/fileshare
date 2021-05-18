@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/goji/httpauth"
-	"github.com/tidwall/buntdb"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -19,8 +17,10 @@ import (
 	"time"
 
 	"github.com/foolin/goview"
+	"github.com/goji/httpauth"
 	"github.com/greboid/fileshare"
 	"github.com/kouhin/envflag"
+	"github.com/tidwall/buntdb"
 	"github.com/yalue/merged_fs"
 	"goji.io"
 	"goji.io/pat"
@@ -61,7 +61,7 @@ func main() {
 	initTemplates()
 	router := goji.NewMux()
 	upload := goji.SubMux()
-	files  := goji.SubMux()
+	files := goji.SubMux()
 
 	upload.Use(httpauth.BasicAuth(authOptions))
 	upload.HandleFunc(pat.Post("/file"), handleUpload(db))
@@ -89,7 +89,7 @@ func main() {
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
+	if err = server.Shutdown(ctx); err != nil {
 		log.Fatalf("Unable to shutdown: %s", err.Error())
 	}
 	log.Print("Finishing server.")
