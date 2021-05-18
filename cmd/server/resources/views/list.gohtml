@@ -1,0 +1,7 @@
+{{define "content"}}
+    <ul>
+        {{ range .Files }}
+            <li><a href="{{.GetURL}}">{{.Name}}{{.Extension}}</a>({{.GetHumanSize}}) {{.Expiry}}</li>
+        {{ end }}
+    </ul>
+{{end}}

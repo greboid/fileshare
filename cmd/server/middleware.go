@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/goji/httpauth"
 	"github.com/gorilla/handlers"
 	"github.com/greboid/fileshare"
 )
@@ -16,12 +17,19 @@ func authFunc(key string) func(string, string, *http.Request) bool {
 		}
 	}
 	return func(_ string, password string, request *http.Request) bool {
-		key := request.Header.Get("X-API-KEY")
-		if key == "meh" || password == "meh" {
+		headerKey := request.Header.Get("X-API-KEY")
+		if headerKey == key || password == key {
 			return true
 		}
 		return false
 	}
+}
+
+func Auth(apiKey string) func(handler http.Handler) http.Handler {
+	return httpauth.BasicAuth(httpauth.AuthOptions{
+		AuthFunc: authFunc(apiKey),
+		Realm: "fileshare",
+	})
 }
 
 func LoggingHandler(dst io.Writer) func(http.Handler) http.Handler {

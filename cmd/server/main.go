@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/foolin/goview"
-	"github.com/goji/httpauth"
 	"github.com/greboid/fileshare"
 	"github.com/kouhin/envflag"
 	"github.com/yalue/merged_fs"
@@ -55,18 +54,22 @@ func main() {
 	router := goji.NewMux()
 	upload := goji.SubMux()
 	files := goji.SubMux()
+	admin := goji.SubMux()
 
-	upload.Use(httpauth.BasicAuth(httpauth.AuthOptions{
-		AuthFunc: authFunc(os.Getenv("API-KEY")),
-	}))
+	upload.Use(Auth(os.Getenv("API-KEY")))
 	upload.HandleFunc(pat.Post("/file"), handleUpload(db))
 
 	files.Use(checkExpiry(db))
 	files.Handle(pat.New("/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
 
+	admin.Use(Auth(os.Getenv("API-KEY")))
+	admin.HandleFunc(pat.Get("/list"), handleList(db))
+
 	router.Use(LoggingHandler(os.Stdout))
 	router.Use(StripSlashes)
+
 	router.HandleFunc(pat.Get("/"), handleIndex)
+	router.Handle(pat.New("/admin/*"), admin)
 	router.Handle(pat.New("/upload/*"), upload)
 	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
 	router.Handle(pat.Get("/raw/*"), files)
@@ -142,6 +145,20 @@ func handleUpload(db *fileshare.DB) func(writer http.ResponseWriter, request *ht
 			writer.WriteHeader(http.StatusBadRequest)
 		}
 		_, _ = writer.Write(jsonData)
+	}
+}
+
+func handleList(db *fileshare.DB) func(writer http.ResponseWriter, request *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		{
+			err := goview.Render(writer, http.StatusOK, "list", goview.M{
+				"Title": "List",
+				"Files": db.GetFiles(),
+			})
+			if err != nil {
+				_, _ = fmt.Fprintf(writer, "Render index error: %v!", err)
+			}
+		}
 	}
 }
 

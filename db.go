@@ -79,7 +79,7 @@ func (db *DB) checkFile(ud UploadDescription) {
 	}
 }
 
-func (db *DB) pruneFiles() {
+func (db *DB) GetFiles() []UploadDescription {
 	var uploads []UploadDescription
 	_ = db.db.View(func(tx *buntdb.Tx) error {
 		err := tx.Ascend("", func(key, value string) bool {
@@ -90,6 +90,11 @@ func (db *DB) pruneFiles() {
 		})
 		return err
 	})
+	return uploads
+}
+
+func (db *DB) pruneFiles() {
+	uploads := db.GetFiles()
 	for index := range uploads {
 		db.checkFile(uploads[index])
 	}
