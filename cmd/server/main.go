@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"embed"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -13,14 +12,12 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/foolin/goview"
 	"github.com/goji/httpauth"
 	"github.com/greboid/fileshare"
 	"github.com/kouhin/envflag"
-	"github.com/tidwall/buntdb"
 	"github.com/yalue/merged_fs"
 	"goji.io"
 	"goji.io/pat"
@@ -47,14 +44,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to create work directory: %s", err.Error())
 	}
-	db, err := buntdb.Open(*dbFile)
+
+	db, err := fileshare.NewDB(*workDir, *dbFile)
 	if err != nil {
 		log.Fatalf("Unable to open the database: %s", err.Error())
 	}
-	defer func() {
-		_ = db.Close()
-	}()
-	backgroundPrune(db)
+	defer db.Close()
+	db.StartBackgroundPrune()
 	authOptions := httpauth.AuthOptions{
 		AuthFunc: authFunc(os.Getenv("API-KEY")),
 	}
@@ -95,78 +91,12 @@ func main() {
 	log.Print("Finishing server.")
 }
 
-func checkExpiry(db *buntdb.DB) func(next http.Handler) http.Handler {
+func checkExpiry(db *fileshare.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ud, err := getFile(db, strings.TrimPrefix(r.URL.Path, "/raw/"))
-			if err == nil {
-				checkFile(db, *ud)
-			}
+			db.CheckFileName(r.URL.Path, "/raw/")
 			next.ServeHTTP(w, r)
 		})
-	}
-}
-
-func backgroundPrune(db *buntdb.DB) {
-	ticker := time.NewTicker(1 * time.Minute)
-	pruneFiles(db)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				pruneFiles(db)
-			}
-		}
-	}()
-}
-
-func pruneFiles(db *buntdb.DB) {
-	var uploads []fileshare.UploadDescription
-	_ = db.View(func(tx *buntdb.Tx) error {
-		err := tx.Ascend("", func(key, value string) bool {
-			ud := fileshare.UploadDescription{}
-			_ = json.Unmarshal([]byte(value), &ud)
-			uploads = append(uploads, ud)
-			return true
-		})
-		return err
-	})
-	for index := range uploads {
-		checkFile(db, uploads[index])
-	}
-}
-
-func getFile(db *buntdb.DB, fullname string) (*fileshare.UploadDescription, error) {
-	var dbValue string
-	ud := &fileshare.UploadDescription{}
-	var err error
-	err = db.View(func(tx *buntdb.Tx) error {
-		dbValue, err = tx.Get(fullname)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal([]byte(dbValue), ud)
-	if err != nil {
-		return nil, err
-	}
-	return ud, nil
-}
-
-func checkFile(db *buntdb.DB, ud fileshare.UploadDescription) {
-	if time.Now().After(ud.Expiry) {
-		log.Printf("Removing: %s", ud.GetFullName())
-		err := os.Remove(filepath.Join(*workDir, "raw", ud.GetFullName()))
-		if err != nil {
-			log.Printf("Error removing file %s: %s", ud.GetFullName(), err.Error())
-		}
-		_ = db.Update(func(tx *buntdb.Tx) error {
-			_, err = tx.Delete(ud.GetFullName())
-			return err
-		})
-	} else {
-		log.Printf("Not removing: %s", ud.GetFullName())
 	}
 }
 
@@ -185,7 +115,7 @@ func authFunc(key string) func(string, string, *http.Request) bool {
 	}
 }
 
-func handleUpload(db *buntdb.DB) func(writer http.ResponseWriter, request *http.Request) {
+func handleUpload(db *fileshare.DB) func(writer http.ResponseWriter, request *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		ud := fileshare.UploadDescription{
 			Name: fileshare.Hex(6),
@@ -213,17 +143,13 @@ func handleUpload(db *buntdb.DB) func(writer http.ResponseWriter, request *http.
 		}
 		ud.Extension = filepath.Ext(handler.Filename)
 		ud.Size = handler.Size
-		jsonData, err := json.Marshal(ud)
-		err = db.Update(func(tx *buntdb.Tx) error {
-			_, _, err = tx.Set(ud.GetFullName(), string(jsonData), nil)
-			return err
-		})
+		err = db.AddEntry(ud)
 		if err != nil {
 			log.Printf("Upload failed: unable to write meta: %v", err)
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		jsonData, err = ud.GetJSON()
+		jsonData, err := ud.GetJSON()
 		if err != nil {
 			log.Printf("Upload failed: couldn't get file data: %v", err)
 			writer.WriteHeader(http.StatusBadRequest)
