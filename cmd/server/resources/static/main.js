@@ -4,15 +4,23 @@ let expiryElement = document.getElementById('expiry');
 
 
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, preventDefaults, false)
+    if (dropArea != null) {
+        dropArea.addEventListener(eventName, preventDefaults, false)
+    }
 });
 ['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, highlight, false)
+    if (dropArea != null) {
+        dropArea.addEventListener(eventName, highlight, false)
+    }
 });
 ['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, unhighlight, false)
+    if (dropArea != null) {
+        dropArea.addEventListener(eventName, unhighlight, false)
+    }
 });
-dropArea.addEventListener('drop', handleDrop, false)
+if (dropArea != null) {
+    dropArea.addEventListener('drop', handleDrop, false)
+}
 
 function preventDefaults(e) {
     e.preventDefault()
