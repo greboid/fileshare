@@ -1,31 +1,25 @@
-let mainElement = document.getElementsByClassName("content")[0]
 let dropArea = document.getElementById('uploader');
-let expiryElement = document.getElementById('expiry');
 let deleteLinks = document.getElementsByClassName("deleteLink");
 
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    if (dropArea != null) {
-        dropArea.addEventListener(eventName, preventDefaults, false)
-    }
-});
-['dragenter', 'dragover'].forEach(eventName => {
-    if (dropArea != null) {
-        dropArea.addEventListener(eventName, highlight, false)
-    }
-});
-['dragleave', 'drop'].forEach(eventName => {
-    if (dropArea != null) {
-        dropArea.addEventListener(eventName, unhighlight, false)
-    }
-});
 if (dropArea != null) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false)
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false)
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false)
+    });
     dropArea.addEventListener('drop', handleDrop, false)
 }
 
 if (deleteLinks != null) {
-    Array.from(deleteLinks).forEach( link => link.addEventListener("click", function() {handleDelete(link)}, false))
+    Array.from(deleteLinks).forEach(link => {
+        link.addEventListener("click", () => handleDelete(link), false)
+    })
 }
+
 
 function preventDefaults(e) {
     e.preventDefault()
@@ -54,21 +48,20 @@ function handleFiles(files) {
 }
 
 function handleDelete(link) {
-    function deleteLink() {
-        link.parentNode.parentNode.parentNode.removeChild(link.parentNode.parentNode)
-    }
     axios({
         withCredentials: true,
         method: 'delete',
-        url: '/admin/delete/'+link.dataset.file,
+        url: '/admin/delete/' + link.dataset.file,
     })
-        .then(() => {
-            deleteLink();
+        .then(() => link.parentNode.parentNode.removeChild(link.parentNode))
+        .catch(() => {
+            /* Error. Inform the user */
         })
-        .catch(() => { /* Error. Inform the user */})
 }
 
 function uploadFile(file) {
+    let mainElement = document.getElementsByClassName("content")[0]
+    let expiryElement = document.getElementById('expiry');
     let expiry = expiryElement.selectedOptions[0].value
     let progressBar = document.createElement("progress")
     progressBar.setAttribute("max", "100")
@@ -104,5 +97,7 @@ function uploadFile(file) {
         onUploadProgress: event => handleProgress(event, progressBar)
     })
         .then((response) => progressDone(progressBar, response))
-        .catch(() => { /* Error. Inform the user */})
+        .catch(() => {
+            /* Error. Inform the user */
+        })
 }
