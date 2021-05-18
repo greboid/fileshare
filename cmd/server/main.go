@@ -51,22 +51,21 @@ func main() {
 	}
 	defer db.Close()
 	db.StartBackgroundPrune()
-	authOptions := httpauth.AuthOptions{
-		AuthFunc: authFunc(os.Getenv("API-KEY")),
-	}
 	initTemplates()
 	router := goji.NewMux()
 	upload := goji.SubMux()
 	files := goji.SubMux()
 
-	upload.Use(httpauth.BasicAuth(authOptions))
+	upload.Use(httpauth.BasicAuth(httpauth.AuthOptions{
+		AuthFunc: authFunc(os.Getenv("API-KEY")),
+	}))
 	upload.HandleFunc(pat.Post("/file"), handleUpload(db))
 
 	files.Use(checkExpiry(db))
 	files.Handle(pat.New("/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
 
-	router.Use(fileshare.LoggingHandler(os.Stdout))
-	router.Use(fileshare.StripSlashes)
+	router.Use(LoggingHandler(os.Stdout))
+	router.Use(StripSlashes)
 	router.HandleFunc(pat.Get("/"), handleIndex)
 	router.Handle(pat.New("/upload/*"), upload)
 	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
@@ -89,30 +88,6 @@ func main() {
 		log.Fatalf("Unable to shutdown: %s", err.Error())
 	}
 	log.Print("Finishing server.")
-}
-
-func checkExpiry(db *fileshare.DB) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			db.CheckFileName(r.URL.Path, "/raw/")
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func authFunc(key string) func(string, string, *http.Request) bool {
-	if key == "" {
-		return func(string, string, *http.Request) bool {
-			return true
-		}
-	}
-	return func(_ string, password string, request *http.Request) bool {
-		key := request.Header.Get("X-API-KEY")
-		if key == "meh" || password == "meh" {
-			return true
-		}
-		return false
-	}
 }
 
 func handleUpload(db *fileshare.DB) func(writer http.ResponseWriter, request *http.Request) {
