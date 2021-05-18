@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/foolin/goview"
@@ -60,16 +61,20 @@ func main() {
 	initTemplates()
 	router := goji.NewMux()
 	upload := goji.SubMux()
+	files  := goji.SubMux()
 
 	upload.Use(httpauth.BasicAuth(authOptions))
-	upload.HandleFunc(pat.New("/file"), handleUpload(db))
+	upload.HandleFunc(pat.Post("/file"), handleUpload(db))
+
+	files.Use(checkExpiry(db))
+	files.Handle(pat.New("/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
 
 	router.Use(fileshare.LoggingHandler(os.Stdout))
 	router.Use(fileshare.StripSlashes)
 	router.HandleFunc(pat.Get("/"), handleIndex)
 	router.Handle(pat.New("/upload/*"), upload)
 	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
-	router.Handle(pat.Get("/raw/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
+	router.Handle(pat.Get("/raw/*"), files)
 
 	log.Print("Starting server.")
 	server := http.Server{
@@ -88,6 +93,18 @@ func main() {
 		log.Fatalf("Unable to shutdown: %s", err.Error())
 	}
 	log.Print("Finishing server.")
+}
+
+func checkExpiry(db *buntdb.DB) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ud, err := getFile(db, strings.TrimPrefix(r.URL.Path, "/raw/"))
+			if err == nil {
+				checkFile(db, *ud)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func backgroundPrune(db *buntdb.DB) {
@@ -115,17 +132,41 @@ func pruneFiles(db *buntdb.DB) {
 		return err
 	})
 	for index := range uploads {
-		if time.Now().After(uploads[index].Expiry) {
-			log.Printf("Removing: %s", uploads[index].GetFullName())
-			err := os.Remove(filepath.Join(*workDir, "raw", uploads[index].GetFullName()))
-			if err != nil {
-				log.Printf("Error removing file %s: %s", uploads[index].GetFullName(), err.Error())
-			}
-			_ = db.Update(func(tx *buntdb.Tx) error {
-				_, err = tx.Delete(uploads[index].GetFullName())
-				return err
-			})
+		checkFile(db, uploads[index])
+	}
+}
+
+func getFile(db *buntdb.DB, fullname string) (*fileshare.UploadDescription, error) {
+	var dbValue string
+	ud := &fileshare.UploadDescription{}
+	var err error
+	err = db.View(func(tx *buntdb.Tx) error {
+		dbValue, err = tx.Get(fullname)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(dbValue), ud)
+	if err != nil {
+		return nil, err
+	}
+	return ud, nil
+}
+
+func checkFile(db *buntdb.DB, ud fileshare.UploadDescription) {
+	if time.Now().After(ud.Expiry) {
+		log.Printf("Removing: %s", ud.GetFullName())
+		err := os.Remove(filepath.Join(*workDir, "raw", ud.GetFullName()))
+		if err != nil {
+			log.Printf("Error removing file %s: %s", ud.GetFullName(), err.Error())
 		}
+		_ = db.Update(func(tx *buntdb.Tx) error {
+			_, err = tx.Delete(ud.GetFullName())
+			return err
+		})
+	} else {
+		log.Printf("Not removing: %s", ud.GetFullName())
 	}
 }
 
