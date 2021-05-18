@@ -79,7 +79,7 @@ func main() {
 	log.Print("Finishing server.")
 }
 
-func authFunc(key string) func (string, string, *http.Request) bool {
+func authFunc(key string) func(string, string, *http.Request) bool {
 	if key == "" {
 		log.Printf("API Key: Unspecified")
 		return func(string, string, *http.Request) bool {
@@ -114,6 +114,13 @@ func handleUpload(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = file.Close()
 	}()
+	expiry := request.FormValue("expiry")
+	if expiry != "0" {
+		duration, err := time.ParseDuration(expiry)
+		if err == nil {
+			ud.Expiry = time.Now().Add(duration)
+		}
+	}
 	ud.Extension = filepath.Ext(handler.Filename)
 	ud.Size = handler.Size
 	data, err := ioutil.ReadAll(file)

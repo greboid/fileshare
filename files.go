@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 )
@@ -12,6 +13,7 @@ type UploadDescription struct {
 	Name      string
 	Extension string
 	Size      int64
+	Expiry    time.Time
 }
 
 func (ud *UploadDescription) GetFullName() string {
@@ -34,6 +36,7 @@ func (ud *UploadDescription) GetJSON() ([]byte, error) {
 		"FullName":  ud.GetFullName(),
 		"URL":       ud.GetURL(),
 		"HumanSize": ud.GetHumanSize(),
+		"Expiry":    ud.Expiry.Format("2006-01-02 15:04:05"),
 	}
 	return json.Marshal(output)
 }

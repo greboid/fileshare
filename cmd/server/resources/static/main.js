@@ -1,5 +1,6 @@
 let mainElement = document.getElementsByClassName("content")[0]
 let dropArea = document.getElementById('uploader');
+let expiryElement = document.getElementById('expiry');
 
 
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -12,17 +13,6 @@ let dropArea = document.getElementById('uploader');
     dropArea.addEventListener(eventName, unhighlight, false)
 });
 dropArea.addEventListener('drop', handleDrop, false)
-
-document.onpaste = function (event) {
-    let items = (event.clipboardData || event.originalEvent.clipboardData).items;
-    console.log(items)
-    for (let index in items) {
-        let item = items[index];
-        if (item.kind === "file") {
-            uploadFile(item.getAsFile())
-        }
-    }
-};
 
 function preventDefaults(e) {
     e.preventDefault()
@@ -51,6 +41,7 @@ function handleFiles(files) {
 }
 
 function uploadFile(file) {
+    let expiry = expiryElement.selectedOptions[0].value
     let progressBar = document.createElement("progress")
     progressBar.setAttribute("max", "100")
     progressBar.setAttribute("value", "0")
@@ -58,6 +49,7 @@ function uploadFile(file) {
     let url = '/upload/file'
     let formData = new FormData()
     formData.append('file', file)
+    formData.append('expiry', expiry)
 
     function handleProgress(event, progressBar) {
         progressBar.value = event.loaded / event.total * 100
@@ -65,7 +57,7 @@ function uploadFile(file) {
 
     function progressDone(progressBar, response) {
         let leftText = document.createTextNode("Uploaded: ");
-        let rightText = document.createTextNode(" (" + response.data.HumanSize + ")");
+        let rightText = document.createTextNode(" (" + response.data.HumanSize + ") - Expires: " + response.data.Expiry);
         let link = document.createElement("a")
         link.href = response.data.URL
         link.innerHTML = response.data.FullName
