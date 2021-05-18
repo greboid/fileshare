@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/foolin/goview"
@@ -29,6 +30,7 @@ var (
 	staticFiles   fs.FS
 	templateFiles fs.FS
 	version       = "snapshot"
+	rawDirectory  = "/raw"
 	httpPort      = flag.Int("httpport", 8080, "HTTP server port")
 	workDir       = flag.String("workdir", "./data", "Working directory")
 	dbFile        = flag.String("db-file", "./data/meta.db", "Path to the meta database")
@@ -49,7 +51,7 @@ func main() {
 		log.Fatalf("Unable to open the database: %s", err.Error())
 	}
 	defer db.Close()
-	db.StartBackgroundPrune()
+	db.StartBackgroundPrune(rawDirectory)
 	initTemplates()
 	router := goji.NewMux()
 	upload := goji.SubMux()
@@ -60,10 +62,11 @@ func main() {
 	upload.HandleFunc(pat.Post("/file"), handleUpload(db))
 
 	files.Use(checkExpiry(db))
-	files.Handle(pat.New("/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
+	files.Handle(pat.New("/*"), http.StripPrefix(rawDirectory, http.FileServer(http.Dir(filepath.Join(*workDir, rawDirectory)))))
 
 	admin.Use(Auth(os.Getenv("API-KEY")))
 	admin.HandleFunc(pat.Get("/list"), handleList(db))
+	admin.HandleFunc(pat.Delete("/delete/*"), handleDelete(db))
 
 	router.Use(LoggingHandler(os.Stdout))
 	router.Use(StripSlashes)
@@ -72,7 +75,7 @@ func main() {
 	router.Handle(pat.New("/admin/*"), admin)
 	router.Handle(pat.New("/upload/*"), upload)
 	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
-	router.Handle(pat.Get("/raw/*"), files)
+	router.Handle(pat.Get(rawDirectory + "/*"), files)
 
 	log.Print("Starting server.")
 	server := http.Server{
@@ -91,6 +94,18 @@ func main() {
 		log.Fatalf("Unable to shutdown: %s", err.Error())
 	}
 	log.Print("Finishing server.")
+}
+
+func handleDelete(db *fileshare.DB) func(http.ResponseWriter, *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		filename := strings.TrimPrefix(request.URL.Path, "/admin/delete/")
+		err := db.DeleteFile(filename, rawDirectory)
+		if err != nil {
+			log.Printf("Delete failed: %s:", err.Error())
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
 }
 
 func handleUpload(db *fileshare.DB) func(writer http.ResponseWriter, request *http.Request) {

@@ -39,14 +39,23 @@ func (db *DB) AddEntry(ud UploadDescription) error {
 	return err
 }
 
-func (db *DB) StartBackgroundPrune() {
+func (db *DB) DeleteFile(filename string, folder string) error {
+	ud, err := db.getFile(strings.TrimPrefix(filename, folder))
+	if err != nil {
+		return err
+	}
+	db.deleteUD(*ud, folder)
+	return nil
+}
+
+func (db *DB) StartBackgroundPrune(folder string) {
 	ticker := time.NewTicker(1 * time.Minute)
-	db.pruneFiles()
+	db.pruneFiles(folder)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				db.pruneFiles()
+				db.pruneFiles(folder)
 			}
 		}
 	}()
@@ -55,28 +64,30 @@ func (db *DB) StartBackgroundPrune() {
 func (db *DB) CheckFileName(filename string, folder string) {
 	ud, err := db.getFile(strings.TrimPrefix(filename, folder))
 	if err == nil {
-		db.checkFile(*ud)
+		db.checkFile(*ud, folder)
 	}
 }
 
-func (db *DB) checkFile(ud UploadDescription) {
+func (db *DB) checkFile(ud UploadDescription, folder string) {
 	blankTime := time.Time{}
 	if ud.Expiry == blankTime {
 		return
 	}
 	if time.Now().After(ud.Expiry) {
-		log.Printf("Removing: %s", ud.GetFullName())
-		err := os.Remove(filepath.Join(db.workdir, "raw", ud.GetFullName()))
-		if err != nil {
-			log.Printf("Error removing file %s: %s", ud.GetFullName(), err.Error())
-		}
-		_ = db.db.Update(func(tx *buntdb.Tx) error {
-			_, err = tx.Delete(ud.GetFullName())
-			return err
-		})
-	} else {
-		log.Printf("Not removing: %s", ud.GetFullName())
+		db.deleteUD(ud, folder)
 	}
+}
+
+func (db *DB) deleteUD(ud UploadDescription, folder string) {
+	log.Printf("Removing: %s", ud.GetFullName())
+	err := os.Remove(filepath.Join(db.workdir, folder, ud.GetFullName()))
+	if err != nil {
+		log.Printf("Error removing file %s: %s", ud.GetFullName(), err.Error())
+	}
+	_ = db.db.Update(func(tx *buntdb.Tx) error {
+		_, err = tx.Delete(ud.GetFullName())
+		return err
+	})
 }
 
 func (db *DB) GetFiles() []UploadDescription {
@@ -93,10 +104,10 @@ func (db *DB) GetFiles() []UploadDescription {
 	return uploads
 }
 
-func (db *DB) pruneFiles() {
+func (db *DB) pruneFiles(folder string) {
 	uploads := db.GetFiles()
 	for index := range uploads {
-		db.checkFile(uploads[index])
+		db.checkFile(uploads[index], folder)
 	}
 }
 
