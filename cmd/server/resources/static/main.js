@@ -80,7 +80,7 @@ function uploadFile(file) {
 
     function progressDone(progressBar, response) {
         let leftText = document.createTextNode("Uploaded: ");
-        let rightText = document.createTextNode(" (" + response.data.HumanSize + ") - Expires: " + response.data.Expiry);
+        let rightText = document.createTextNode(" (" + response.data.HumanSize + ") - Expires: " + response.data.HumanExpiry);
         let link = document.createElement("a")
         link.href = response.data.URL
         link.innerHTML = response.data.FullName

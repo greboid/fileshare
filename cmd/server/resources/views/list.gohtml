@@ -1,7 +1,7 @@
 {{define "content"}}
     <ul>
         {{ range .Files }}
-            <li><a href="{{.GetURL}}">{{.GetFullName}}</a> ({{.GetHumanSize}}) {{.Expiry}} <a class="deleteLink" href="#" data-file="{{.GetFullName}}">Delete</a></li>
+            <li><a href="{{.GetURL}}">{{.GetFullName}}</a> ({{.GetHumanSize}}) {{.GetHumanExpiry}} <a class="deleteLink" href="#" data-file="{{.GetFullName}}">Delete</a></li>
         {{ end }}
     </ul>
 {{end}}
