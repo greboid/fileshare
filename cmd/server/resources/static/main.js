@@ -1,6 +1,7 @@
 let mainElement = document.getElementsByClassName("content")[0]
 let dropArea = document.getElementById('uploader');
 let expiryElement = document.getElementById('expiry');
+let deleteLinks = document.getElementsByClassName("deleteLink");
 
 
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -20,6 +21,10 @@ let expiryElement = document.getElementById('expiry');
 });
 if (dropArea != null) {
     dropArea.addEventListener('drop', handleDrop, false)
+}
+
+if (deleteLinks != null) {
+    Array.from(deleteLinks).forEach( link => link.addEventListener("click", function() {handleDelete(link)}, false))
 }
 
 function preventDefaults(e) {
@@ -46,6 +51,21 @@ function handleFiles(files) {
     ([...files]).forEach(file => {
         uploadFile(file)
     })
+}
+
+function handleDelete(link) {
+    function deleteLink() {
+        link.parentNode.parentNode.parentNode.removeChild(link.parentNode.parentNode)
+    }
+    axios({
+        withCredentials: true,
+        method: 'delete',
+        url: '/admin/delete/'+link.dataset.file,
+    })
+        .then(() => {
+            deleteLink();
+        })
+        .catch(() => { /* Error. Inform the user */})
 }
 
 function uploadFile(file) {
