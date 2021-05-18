@@ -153,6 +153,7 @@ func handleList(db *fileshare.DB) func(writer http.ResponseWriter, request *http
 		{
 			err := goview.Render(writer, http.StatusOK, "list", goview.M{
 				"Title": "List",
+				"Version": version,
 				"Files": db.GetFiles(),
 			})
 			if err != nil {
