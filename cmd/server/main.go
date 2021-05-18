@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"github.com/goji/httpauth"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -42,14 +43,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to create work directory: %s", err.Error())
 	}
+	authOptions := httpauth.AuthOptions{
+		AuthFunc: authFunc(os.Getenv("API-KEY")),
+	}
 	initTemplates()
 	router := goji.NewMux()
+	upload := goji.SubMux()
+
+	upload.Use(httpauth.BasicAuth(authOptions))
+	upload.HandleFunc(pat.New("/file"), handleUpload)
+
 	router.Use(fileshare.LoggingHandler(os.Stdout))
 	router.Use(fileshare.StripSlashes)
-	router.HandleFunc(pat.New("/"), handleIndex)
-	router.HandleFunc(pat.New("/uploadfile"), handleUpload)
-	router.Handle(pat.New("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
-	router.Handle(pat.New("/raw/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
+	router.HandleFunc(pat.Get("/"), handleIndex)
+	router.Handle(pat.New("/upload/*"), upload)
+	router.Handle(pat.Get("/static/*"), http.StripPrefix("/static", http.FileServer(http.FS(staticFiles))))
+	router.Handle(pat.Get("/raw/*"), http.StripPrefix("/raw", http.FileServer(http.Dir(filepath.Join(*workDir, "raw")))))
 
 	log.Print("Starting server.")
 	server := http.Server{
@@ -68,6 +77,23 @@ func main() {
 		log.Fatalf("Unable to shutdown: %s", err.Error())
 	}
 	log.Print("Finishing server.")
+}
+
+func authFunc(key string) func (string, string, *http.Request) bool {
+	if key == "" {
+		log.Printf("API Key: Unspecified")
+		return func(string, string, *http.Request) bool {
+			return true
+		}
+	}
+	log.Printf("API Key: Specified")
+	return func(_ string, password string, request *http.Request) bool {
+		key := request.Header.Get("X-API-KEY")
+		if key == "meh" || password == "meh" {
+			return true
+		}
+		return false
+	}
 }
 
 func handleUpload(writer http.ResponseWriter, request *http.Request) {
