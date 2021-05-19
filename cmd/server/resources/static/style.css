@@ -110,3 +110,7 @@ th {
 td.spanned {
     text-align: center;
 }
+
+td.hidden {
+    display: none;
+}

@@ -10,7 +10,6 @@
             </tr>
             </thead>
             <tbody>
-            {{ if not .Files}}<tr><td colspan="4" class="spanned">No files</td></tr>{{ end }}
             {{ range .Files }}
             <tr>
                 <td><a href="{{.GetURL}}">{{.GetFullName}}</a></td>
@@ -19,6 +18,7 @@
                 <td><a class="deleteLink" href="#" data-file="{{.GetFullName}}">Delete</a></td>
             </tr>
             {{ end }}
+            <tr><td colspan="4" class="spanned{{ if gt (len .Files) 0}} hidden{{ end }}">No files</td></tr>
             </tbody>
         </table>
 {{end}}

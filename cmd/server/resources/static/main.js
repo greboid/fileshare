@@ -47,13 +47,22 @@ function handleFiles(files) {
     })
 }
 
+function removeFileFromList(link) {
+    let tbody = link.closest("tbody")
+    tbody.removeChild(link.closest("tr"))
+    let count = tbody.rows.length
+    if (count === 1) {
+        tbody.firstElementChild.firstElementChild.classList.remove("hidden")
+    }
+}
+
 function handleDelete(link) {
     axios({
         withCredentials: true,
         method: 'delete',
         url: '/admin/delete/' + link.dataset.file,
     })
-        .then(() => link.parentNode.parentNode.parentNode.removeChild(link.parentNode.parentNode))
+        .then(() => removeFileFromList(link))
         .catch(() => {
             /* Error. Inform the user */
         })
