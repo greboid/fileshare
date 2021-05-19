@@ -2,6 +2,7 @@
     --divider: #6c757d;
     --linkColour: #1E69CA;
     --backgroundColour: #eee;
+    --altBackgroundColour: #d6d6d6;
     --foregroundColor: #000;
 }
 
@@ -10,6 +11,7 @@
         --divider: #6c757d;
         --linkColour: #6eb9ff;
         --backgroundColour: #161616;
+        --altBackgroundColour: #2d2d2d;
         --foregroundColor: #d6d6d6;
     }
 }
@@ -76,10 +78,14 @@ input {
     flex-direction: column;
     gap: 1em;
 }
+.button:hover {
+    background: var(--backgroundColour);
+}
 .button.highlight {
     border-color: purple;
 }
 .button {
+    background: var(--altBackgroundColour);
     border: 2px dashed #ccc;
     display: inline-block;
     cursor: pointer;
