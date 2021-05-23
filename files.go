@@ -33,6 +33,9 @@ func (ud *UploadDescription) GetHumanExpiry() string {
 	if ud.Expiry == baseTime {
 		return "No Expiry"
 	}
+	if ud.Expiry.Before(time.Now()) {
+		return "Expired"
+	}
 	diff := ud.Expiry.Sub(time.Now())
 	if diff.Truncate(time.Hour).Hours() > 0 {
 		return durafmt.Parse(diff).LimitFirstN(2).String()
