@@ -31,17 +31,17 @@ func main() {
 	defer func() {
 		_ = file.Close()
 	}()
-	body, err := doRequest(config, file)
+	body, err := doRequest(config, fileName, file)
 	if err != nil {
 		log.Fatalf("Unable to read body: %s", err.Error())
 	}
 	log.Printf("Response: %s", string(body))
 }
 
-func doRequest(config *Config, payload io.Reader) ([]byte, error) {
+func doRequest(config *Config, fileName string, payload io.Reader) ([]byte, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "upload")
+	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -49,16 +49,24 @@ func doRequest(config *Config, payload io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = writer.Close()
-	}()
-	_ = writer.WriteField("expiry", "0")
-	_ = writer.WriteField("randomise", "true")
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+	err = writer.WriteField("expiry", "0")
+	if err != nil {
+		return nil, err
+	}
+	err = writer.WriteField("randomise", "true")
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(http.MethodPost, config.URL+"/upload/file", body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("X-API-KEY", config.APIKey)
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	client := http.Client{}
