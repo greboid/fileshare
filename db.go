@@ -69,11 +69,7 @@ func (db *DB) CheckFileName(filename string, folder string) {
 }
 
 func (db *DB) checkFile(ud UploadDescription, folder string) {
-	blankTime := time.Time{}
-	if ud.Expiry == blankTime {
-		return
-	}
-	if time.Now().After(ud.Expiry) {
+	if !ud.Expiry.IsZero() && time.Now().After(ud.Expiry) {
 		db.deleteUD(ud, folder)
 	}
 }

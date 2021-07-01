@@ -16,8 +16,11 @@ type Config struct {
 
 func getConfigFile() (*os.File, error) {
 	var configFile *os.File
-	configDir := getConfigDirectory()
-	err := os.MkdirAll(configDir, 0644)
+	configDir, err := getConfigDirectory()
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(configDir, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +38,15 @@ func getConfigFile() (*os.File, error) {
 		}
 	}
 	return configFile, nil
+}
+
+func getConfigDirectory() (string, error) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(configDir, "fileshare-client"), nil
 }
 
 func getConfig() (*Config, error) {
