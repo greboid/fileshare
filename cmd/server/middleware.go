@@ -17,17 +17,15 @@ func Auth(apiKey string) func(next http.Handler) http.Handler {
 				next.ServeHTTP(writer, request)
 				return
 			}
+
 			_, password, ok := request.BasicAuth()
-			if !ok {
+			if !ok || password != apiKey {
+				writer.Header().Add("WWW-Authenticate", `Basic realm="fileshare"`)
 				writer.WriteHeader(401)
 				return
 			}
-			if password == apiKey {
-				next.ServeHTTP(writer, request)
-				return
-			}
-			writer.WriteHeader(401)
-			return
+
+			next.ServeHTTP(writer, request)
 		})
 	}
 }
