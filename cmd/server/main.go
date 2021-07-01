@@ -224,7 +224,7 @@ func initFileSystem() error {
 	templateFs, _ := fs.Sub(embeddedFiles, "resources/views")
 	templateFiles = merged_fs.NewMergedFS(os.DirFS("resources/views"), templateFs)
 
-	err := os.MkdirAll(filepath.Join(*workDir, "raw"), 0644)
+	err := os.MkdirAll(filepath.Join(*workDir, "raw"), 0755)
 	if err != nil {
 		return err
 	}
