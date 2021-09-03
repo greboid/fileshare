@@ -1,6 +1,6 @@
 module github.com/greboid/fileshare
 
-go 1.16
+go 1.17
 
 require (
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
@@ -12,4 +12,15 @@ require (
 	github.com/tidwall/buntdb v1.2.3
 	github.com/yalue/merged_fs v1.0.6
 	goji.io v2.0.2+incompatible
+)
+
+require (
+	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/tidwall/btree v0.4.2 // indirect
+	github.com/tidwall/gjson v1.7.4 // indirect
+	github.com/tidwall/grect v0.1.1 // indirect
+	github.com/tidwall/match v1.0.3 // indirect
+	github.com/tidwall/pretty v1.1.0 // indirect
+	github.com/tidwall/rtred v0.1.2 // indirect
+	github.com/tidwall/tinyqueue v0.1.1 // indirect
 )
