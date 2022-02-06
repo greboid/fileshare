@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-yaml/yaml"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
