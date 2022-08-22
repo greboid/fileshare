@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
-	github.com/tidwall/buntdb v1.2.9
+	github.com/tidwall/buntdb v1.2.10
 	github.com/yalue/merged_fs v1.2.2
 	goji.io v2.0.2+incompatible
 	gopkg.in/yaml.v2 v2.4.0
@@ -16,8 +16,8 @@ require (
 
 require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
-	github.com/tidwall/btree v1.1.0 // indirect
-	github.com/tidwall/gjson v1.14.0 // indirect
+	github.com/tidwall/btree v1.4.2 // indirect
+	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
