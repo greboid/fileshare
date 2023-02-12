@@ -7,5 +7,5 @@ on:
       - v*
 jobs:
   test:
-    uses: greboid/.github/.github/workflows/checkout-and-test-go.yml@master
+    uses: greboid/.github/.github/workflows/go-test.yml@master
     secrets: inherit
