@@ -1,6 +1,6 @@
 module github.com/greboid/fileshare
 
-go 1.19
+go 1.20
 
 require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
