@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/foolin/goview v0.3.0
-	github.com/gorilla/handlers v1.5.1
+	github.com/gorilla/handlers v1.5.2
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/tidwall/buntdb v1.3.0
