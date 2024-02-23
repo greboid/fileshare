@@ -9,7 +9,7 @@ require (
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/tidwall/buntdb v1.3.0
-	github.com/yalue/merged_fs v1.2.3
+	github.com/yalue/merged_fs v1.3.0
 	goji.io v2.0.2+incompatible
 	gopkg.in/yaml.v2 v2.4.0
 )
